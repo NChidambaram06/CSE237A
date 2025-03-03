@@ -60,54 +60,52 @@ if __name__ == "__main__":
     v_x = 0
     v_y = 0
     v_z = 0
+    time_interval = 0.01 # in seconds
 
     while True:
         a_x, a_y, a_z, g_x, g_y, g_z, magnitude = get_accel_gyro()
         roll, pitch =calculate_roll_pitch(a_x, a_y, a_z)
-        if len(last_ax) < 30:
+        if len(last_ax) < 100:
             last_ax.append(a_x)
             last_ay.append(a_y)
             last_az.append(a_z)
-        elif len(last_ax) == 30:
-            last_ax.popleft()
+        elif len(last_ax) == 100:
+            old_x = last_ax.popleft()
+            old_y = last_ay.popleft()
+            old_z = last_az.popleft()
+            v_x -= old_x * time_interval
+            v_y -= old_y * time_interval
+            v_z -= old_y * time_interval
+
             last_ax.append(a_x)
-            last_ay.popleft()
             last_ay.append(a_y)
-            last_az.popleft()
             last_az.append(a_z)
-        # print(f"Accel: ({a_x}, {a_y}, {a_z}), Gyro: ({g_x, g_y, g_z})")
-        # print(f"Magnitude: {magnitude}")
-        # print(f"roll(x): {roll}(y), pitch:{pitch}\n\n")
-
-        # avg_x = sum(last_ax) / len(last_ax)
-        # avg_y = sum(last_ay) / len(last_ay)
-        # avg_z = sum(last_az) / len(last_az)
-        # magnitude = calc_magnitude(avg_x, avg_y, avg_z)
-        # v_x += a_x * 0.05
-        # v_y += a_y * 0.05
-        # v_z += a_z * 0.05
-
         
+        v_x += a_x * time_interval
+        v_y += a_y * time_interval
+        v_z += a_z * time_interval
+
+        speed = calc_magnitude(v_x, v_y, v_z)
         
-        # Integrate acceleration to get velocity in each dimension
-        for a_x, a_y, a_z in zip(last_ax, last_ay, last_az):
-            v_x += a_x * 0.01  # v_x(t) = v_x(t-1) + a_x * Δt
-            v_y += a_y * 0.01  # v_y(t) = v_y(t-1) + a_y * Δt
-            v_z += a_z * 0.01  # v_z(t) = v_z(t-1) + a_z * Δt
+        # # Integrate acceleration to get velocity in each dimension
+        # for a_x, a_y, a_z in zip(last_ax, last_ay, last_az):
+        #     v_x += a_x * 0.01  # v_x(t) = v_x(t-1) + a_x * Δt
+        #     v_y += a_y * 0.01  # v_y(t) = v_y(t-1) + a_y * Δt
+        #     v_z += a_z * 0.01  # v_z(t) = v_z(t-1) + a_z * Δt
             
-            # Calculate the speed (magnitude of velocity vector)
-            speed = calc_magnitude(v_x, v_y, v_z)
+        #     # Calculate the speed (magnitude of velocity vector)
+        #     speed = calc_magnitude(v_x, v_y, v_z)
         
         v_roll, v_pitch = calculate_roll_pitch(v_x, v_y, v_z)
 
-        print(f" Accel: ({a_x}, {a_y}, {a_z})")
-        print(f"accel Magnitude: {magnitude}")
-        print(f"roll(x): {roll}(y), pitch:{pitch}")
-        print("-------------Speed-----------")
-        print(f"speed: ({v_x}, {v_y}, {v_z})")
+        # print(f" Accel: ({a_x}, {a_y}, {a_z})")
+        # print(f"accel Magnitude: {magnitude}")
+        # print(f"roll(x): {roll}(y), pitch:{pitch}")
+        # print("-------------Speed-----------")
+        # print(f"speed: ({v_x}, {v_y}, {v_z})")
         print(f"speed magnitude: {speed}")
         print(f"roll(x): {v_roll}(y), pitch:{v_pitch}\n\n")
 
         # print(f"roll(x): {roll}(y), pitch:{pitch}\n\n")
 
-        time.sleep(0.1) # 10 milliseconds
+        time.sleep(time_interval) # 10 milliseconds
