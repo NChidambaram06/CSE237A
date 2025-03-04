@@ -35,6 +35,7 @@ class SharedVariable:
         self.scrollLastClick = self.get_millis()
         self.pickLastClick = self.get_millis()
         self.scroll_speed = 1
+        self.scroll_dir = 1
     
     def get_millis(self):
         return int(time.time() * 1000)
@@ -81,10 +82,7 @@ def body_scroll(sv):
             print("scroll click")
             sv.scroll = 1
             sv.scrollLastClick = sv.get_millis()
-            rate = int(1/sv.scroll_speed)
-            if rate == 0:
-                rate = 1
-            mouse.scroll(0, rate)
+            mouse.scroll(0, sv.scroll_speed*sv.scroll_dir)
         elif (curr_time - sv.scrollLastClick) > 0:
             if sv.scroll == 1:
                 print("stop scroll click")
@@ -127,7 +125,7 @@ def body_ultra(sv):
     else:
         print(f"The distance is: {distance:.2f} cm")
         dist_10 = distance - 7
-        sv.scroll_speed = dist_10
+        sv.scroll_speed = int(10/dist_10)
         
     
     # Pause between the individual measurements
