@@ -280,11 +280,11 @@ if __name__ == "__main__":
         # v_roll, v_pitch = calculate_roll_pitch_yaw(v_x, v_y, v_z, 0, 0, 0, 0)
 
         if n % 20 == 0:
-            print(f" Accel: ({a_x}, {a_y}, {a_z})")
+            print(f"Accel: ({a_x:.4f}, {a_y:.4f}, {a_z:.4f})")
             # print(f"accel Magnitude: {magnitude}")
             # print(f"roll(x): {roll}(y), pitch:{pitch}")
             # print("-------------Speed-----------")
-            print(f"speed: ({v_x}, {v_y}, {v_z})")
+            print(f"speed: (x: {v_x:.4f}, y: {v_y:.4f}, z: {v_z:.4f})")
             print(f"speed xy magnitude: {speed}")
             # print(f"xy angle of speed: {speed_angle_xy}\n\n")
             # print(f"roll(x): {v_roll}(y), pitch:{v_pitch}\n\n")
