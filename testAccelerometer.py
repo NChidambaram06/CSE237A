@@ -169,18 +169,25 @@ if __name__ == "__main__":
     v_x = 0
     v_y = 0
     v_z = 0
-    time_interval = 0.01 # in seconds
+    time_interval = 0.5 # 0.01 # in seconds
     n =0
 
     # calculate_IMU_error()
 
-    while n < 100:
+    while n < 500:
         a_x, a_y, a_z, g_x, g_y, g_z, elapsed_time = get_accel_gyro()
         a_x = apply_deadband(a_x)
         a_y = apply_deadband(a_y)
-        a_z = apply_deadband(a_z)
+        # a_z = apply_deadband(a_z)
 
         # roll, pitch, yaw =calculate_roll_pitch_yaw(a_x, a_y, a_z, g_x, g_y, g_z, elapsed_time)
+        print(f"a_z: {a_z}")
+        print(f"gyro: {g_x}, {g_y}, {g_z}")
+        if a_z < 0.4:
+            print('tilted up\n')
+        if a_z > 0.8:
+            print("tilted down\n")
+        # print(f"roll {roll}, pitch {pitch}, yaw{ yaw}")
         if len(last_ax) < 100:
             last_ax.append(a_x)
             last_ay.append(a_y)
@@ -242,8 +249,8 @@ if __name__ == "__main__":
 
         time.sleep(time_interval) # 10 milliseconds
         n += 1
-    print(vxs)
-    print(vys)
+    # print(vxs)
+    # print(vys)
     
     # # Simulate accelerometer data (replace with actual readings from your sensor)
     # time_data = []

@@ -3,8 +3,8 @@ from gpiozero import LED, DistanceSensor
 import time
 import threading
 from pynput.mouse import Button, Controller
-
-mouse = Controller()
+import smbus
+import math
 
 # GPIO chip and lines
 CHIP_NAME = "/dev/gpiochip0"
@@ -22,6 +22,12 @@ PIN_SMD_BLU = LED(13)
 #Ultrasonic
 PIN_TRIGGER = 6
 PIN_ECHO = 5
+# Accelerometer/Gyroscope
+MPU_ADDR = 0x68
+
+mouse = Controller()
+bus = smbus.SMBus(1)
+bus.write_byte_data(MPU_ADDR, 0x6B, 0)
 
 class SharedVariable:
     def __init__(self):
@@ -131,6 +137,46 @@ def body_ultra(sv):
     # Pause between the individual measurements
     time.sleep(.25)
 
+def read_sensor_data():
+    # Read accelerometer and gyroscope data (14 bytes starting from address 0x3B)
+    data = bus.read_i2c_block_data(MPU_ADDR, 0x3B, 14)
+    
+    # Combine the high and low bytes for X, Y, Z accelerometer values
+    AcX = (data[0] << 8) + data[1]
+    AcY = (data[2] << 8) + data[3]
+    AcZ = (data[4] << 8) + data[5]
+    
+    return AcX, AcY, AcZ
+
+def calculate_angles(AcX, AcY, AcZ):
+    minVal = 265
+    maxVal = 402
+    # Map the accelerometer data to -90 to 90 degrees
+    xAng = map_value(AcX, minVal, maxVal, -90, 90)
+    yAng = map_value(AcY, minVal, maxVal, -90, 90)
+    zAng = map_value(AcZ, minVal, maxVal, -90, 90)
+
+    # Calculate angles using atan2 function
+    x = math.degrees(math.atan2(-yAng, -zAng) + math.pi)
+    y = math.degrees(math.atan2(-xAng, -zAng) + math.pi)
+    z = math.degrees(math.atan2(-yAng, -xAng) + math.pi)
+    
+    return x, y, z
+
+def map_value(value, in_min, in_max, out_min, out_max):
+    # Map a value from one range to another
+    return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+
+def body_tilt(sv):
+    AcX, AcY, AcZ = read_sensor_data()
+    x, y, z = calculate_angles(AcX, AcY, AcZ)
+    if z > 35:
+        print(f"tilted down, z: {z}")
+        sv.scroll_dir = -1
+    elif z < 15:
+        print(f"tilted up, z: {z}")
+        sv.scroll_dir = 1
+
 
 def sensor_thread(func, sv):
     while not sv.bProgramExit:
@@ -147,7 +193,8 @@ if __name__ == "__main__":
         threading.Thread(target=sensor_thread, args=(body_pick, sv)),
         threading.Thread(target=sensor_thread, args=(body_rgbcolor, sv)),
         threading.Thread(target=sensor_thread, args=(body_twocolor, sv)),
-        threading.Thread(target=sensor_thread, args=(body_ultra, sv))
+        threading.Thread(target=sensor_thread, args=(body_ultra, sv)),
+        threading.Thread(target=sensor_thread, args=(body_tilt, sv))
     ]
     
     for t in threads:
