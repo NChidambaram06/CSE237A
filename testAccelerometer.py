@@ -2,8 +2,8 @@ import smbus2
 import time
 import math
 from collections import deque
-import matplotlib.pyplot as plt
-import random  #
+# import matplotlib.pyplot as plt
+# import random  #
 
 # MPU6050 default address
 MPU6050_ADDR = 0x68
@@ -13,7 +13,7 @@ PWR_MGMT_1 = 0x6B
 ACCEL_XOUT_H = 0x3B
 GYRO_XOUT_H = 0x43
 
-ACCEL_THRESHOLD = 0.1  # Tune this value based on your sensor noise
+ACCEL_THRESHOLD = 0.095  # Tune this value based on your sensor noise
 ACC_ERROR_X = 0.03#0.00328#-5.493426
 ACC_ERROR_Y= -0.03#0.030048#-3.049761
 GYRO_ERROR_X = -2.930811
@@ -30,7 +30,7 @@ GYRO_ERROR_Z = 0.787824
 # GyroErrorY: 1.299714
 # GyroErrorZ: 0.793473
 # Initialize I2C bus
-bus = smbus2.SMBus(1)  # Use SMBus(0) for older Raspberry Pi models
+bus = smbus2.SMBus(1)  
 
 # Wake up the MPU6050 (it starts in sleep mode)
 bus.write_byte_data(MPU6050_ADDR, PWR_MGMT_1, 0)
@@ -38,6 +38,7 @@ bus.write_byte_data(MPU6050_ADDR, PWR_MGMT_1, 0)
 def getMillis():
     millis = int(time.time() * 1000)
     return millis
+
 def read_word(adr):
     """Read two bytes from the sensor and combine them into a signed 16-bit value."""
     high = bus.read_byte_data(MPU6050_ADDR, adr)
@@ -48,7 +49,6 @@ def read_word(adr):
 def calc_magnitude(a_x, a_y, a_z):
     magnitude = math.sqrt(a_x**2 + a_y**2 + a_z**2)
     return magnitude
-
 
 def apply_deadband(value, threshold=ACCEL_THRESHOLD):
     return value if abs(value) > threshold else 0
@@ -71,13 +71,8 @@ def get_accel_gyro():
     a_x, a_y, a_z = get_corrected_accel(a_x, a_y, a_z)
     g_x, g_y, g_z = correct_gyro(g_x, g_y, g_z)  
 
-    magnitude = calc_magnitude(a_x, a_y, a_z)
-
     return a_x, a_y, a_z, g_x , g_y, g_z, elapsed_time
-    # return {
-    #     "accel": {"x": accel_x / 16384.0, "y": accel_y / 16384.0, "z": accel_z / 16384.0},
-    #     "gyro": {"x": gyro_x / 131.0, "y": gyro_y / 131.0, "z": gyro_z / 131.0},
-    # }
+
 def calculate_roll_pitch_yaw(ax, ay, az, gx, gy, gz, elapsedTime):
     """Calculates roll and pitch angles in degrees."""
     # roll = math.atan2(ay, az) * (180 / math.pi)
@@ -158,56 +153,6 @@ def calculate_IMU_error():
 
     return AccErrorX, AccErrorY, GyroErrorX, GyroErrorY, GyroErrorZ
 
-def get_speed():
-    last_ax = deque([])
-    last_ay = deque([])
-    last_az = deque([])
-    vxs = []
-    vys=[]
-    vzs=[]
-    v_x = 0
-    v_y = 0
-    v_z = 0
-    time_interval = 0.01 # 0.01 # in seconds
-    
-    while True:
-        a_x, a_y, a_z, g_x, g_y, g_z, elapsed_time = get_accel_gyro()
-        a_x = apply_deadband(a_x)
-        a_y = apply_deadband(a_y)
-        a_z = apply_deadband(a_z)
-        if len(last_ax) < 100:
-            last_ax.append(a_x)
-            last_ay.append(a_y)
-            last_az.append(a_z)
-        elif len(last_ax) == 100:
-            old_x = last_ax.popleft()
-            old_y = last_ay.popleft()
-            old_z = last_az.popleft()
-            v_x -= old_x * time_interval
-            v_y -= old_y * time_interval
-            v_z -= old_y * time_interval
-
-            last_ax.append(a_x)
-            last_ay.append(a_y)
-            last_az.append(a_z)
-
-        if abs(a_x) < ACCEL_THRESHOLD and abs(a_y) < ACCEL_THRESHOLD:
-            v_x, v_y, v_z = 0, 0, 0
-        
-        # velocity in g/s
-        v_x += a_x * time_interval
-        v_y += a_y * time_interval
-        v_z += a_z * time_interval
-
-        vxs.append(v_x)
-        vys.append(v_y)
-        vzs.append(v_z)
-
-
-        speed = calc_magnitude(v_x, v_y, 0)
-        time.sleep(time_interval)
-    return v_x, v_y, a_x, a_y
-
 # Main loop
 if __name__ == "__main__":
     last_ax = deque([])
@@ -241,7 +186,7 @@ if __name__ == "__main__":
             old_z = last_az.popleft()
             v_x -= old_x * time_interval
             v_y -= old_y * time_interval
-            v_z -= old_y * time_interval
+            v_z -= old_z * time_interval
 
             last_ax.append(a_x)
             last_ay.append(a_y)
@@ -297,50 +242,50 @@ if __name__ == "__main__":
     # print(vys)
     
     # # Simulate accelerometer data (replace with actual readings from your sensor)
-    time_data = []
-    for i in range(len(last_ax)):
-        time_data.append(i)
+    # time_data = []
+    # for i in range(len(last_ax)):
+    #     time_data.append(i)
 
-    # Plotting acceleration data
-    plt.figure(figsize=(10, 6))
+    # # Plotting acceleration data
+    # plt.figure(figsize=(10, 6))
 
-    # Plot Acceleration on X, Y, and Z axes
-    plt.plot(time_data, last_ax, label='Accel X', color='r')
-    plt.plot(time_data, last_ay, label='Accel Y', color='g')
-    plt.plot(time_data, last_az, label='Accel Z', color='b')
+    # # Plot Acceleration on X, Y, and Z axes
+    # plt.plot(time_data, last_ax, label='Accel X', color='r')
+    # plt.plot(time_data, last_ay, label='Accel Y', color='g')
+    # plt.plot(time_data, last_az, label='Accel Z', color='b')
 
-    # Labels and title
-    plt.xlabel('Time (s)')
-    plt.ylabel('Acceleration (g)')
-    plt.title('Accelerometer Data: X, Y, Z')
+    # # Labels and title
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Acceleration (g)')
+    # plt.title('Accelerometer Data: X, Y, Z')
 
-    # Show legend
-    plt.legend()
+    # # Show legend
+    # plt.legend()
 
-    # Display the plot
-    plt.grid(True)
-    plt.show()
+    # # Display the plot
+    # plt.grid(True)
+    # plt.show()
 
-    time_v = []
-    for i in range(len(vxs)):
-        time_v.append(i)
+    # time_v = []
+    # for i in range(len(vxs)):
+    #     time_v.append(i)
     
-     # Plotting acceleration data
-    plt.figure(figsize=(10, 6))
+    #  # Plotting acceleration data
+    # plt.figure(figsize=(10, 6))
 
-    # Plot Acceleration on X, Y, and Z axes
-    plt.plot(time_v, vxs, label='Speed X', color='r')
-    plt.plot(time_v, vys, label='Speed Y', color='g')
-    plt.plot(time_v, vzs, label='Speed Z', color='b')
+    # # Plot Acceleration on X, Y, and Z axes
+    # plt.plot(time_v, vxs, label='Speed X', color='r')
+    # plt.plot(time_v, vys, label='Speed Y', color='g')
+    # plt.plot(time_v, vzs, label='Speed Z', color='b')
 
-    # Labels and title
-    plt.xlabel('Time (s)')
-    plt.ylabel('Speed (g)')
-    plt.title('Speed Data: X, Y, Z')
+    # # Labels and title
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Speed (g)')
+    # plt.title('Speed Data: X, Y, Z')
 
-    # Show legend
-    plt.legend()
+    # # Show legend
+    # plt.legend()
 
-    # Display the plot
-    plt.grid(True)
-    plt.show()
+    # # Display the plot
+    # plt.grid(True)
+    # plt.show()

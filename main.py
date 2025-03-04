@@ -3,8 +3,10 @@ from gpiozero import LED, DistanceSensor
 import time
 import threading
 from pynput.mouse import Button, Controller
-import smbus
+import smbus2
 import math
+from collections import deque
+from testAccelerometer import * 
 
 # GPIO chip and lines
 CHIP_NAME = "/dev/gpiochip0"
@@ -24,10 +26,24 @@ PIN_TRIGGER = 6
 PIN_ECHO = 5
 # Accelerometer/Gyroscope
 MPU_ADDR = 0x68
+PWR_MGMT_1 = 0x6B
+ACCEL_XOUT_H = 0x3B
+GYRO_XOUT_H = 0x43
+
+ACCEL_THRESHOLD = 0.095  # Tune this value based on your sensor noise
+ACC_ERROR_X = 0.03#0.00328#-5.493426
+ACC_ERROR_Y= -0.03#0.030048#-3.049761
+GYRO_ERROR_X = -2.930811
+GYRO_ERROR_Y = 1.308454
+GYRO_ERROR_Z = 0.787824
+# AccErrorX: 0.000728
+# run body_functions every 0.01 seconds (10 milliseconds)
+TIME_INTERVAL = 0.01
+PIXEL_MOUSE_MOVE = 100
 
 mouse = Controller()
-bus = smbus.SMBus(1)
-bus.write_byte_data(MPU_ADDR, 0x6B, 0)
+bus = smbus2.SMBus(1)
+bus.write_byte_data(MPU_ADDR, PWR_MGMT_1, 0) # wake up the MPU6050
 
 class SharedVariable:
     def __init__(self):
@@ -42,6 +58,13 @@ class SharedVariable:
         self.pickLastClick = self.get_millis()
         self.scroll_speed = 1
         self.scroll_dir = 1
+        self.last_ax = deque([])
+        self.last_ay = deque([])
+        self.last_az = deque([])
+        self.vx = 0
+        self.vy = 0
+        self.vz = 0
+        self.n = 0
     
     def get_millis(self):
         return int(time.time() * 1000)
@@ -177,11 +200,44 @@ def body_tilt(sv):
         print(f"tilted up, z: {z}")
         sv.scroll_dir = 1
 
+def body_speed(sv):
+    a_x, a_y, a_z, g_x, g_y, g_z, elapsed_time = get_accel_gyro()
+    a_x = apply_deadband(a_x)
+    a_y = apply_deadband(a_y)
+    a_z = apply_deadband(a_z)
+
+    max_time_counts = 100
+    if len(last_ax) < max_time_counts:
+        sv.last_ax.append(a_x)
+        sv.last_ay.append(a_y)
+        sv.last_az.append(a_z)
+    elif len(last_ax) == max_time_counts:
+        old_x = last_ax.popleft()
+        old_y = last_ay.popleft()
+        old_z = last_az.popleft()
+        sv.v_x -= old_x * TIME_INTERVAL
+        sv.v_y -= old_y * TIME_INTERVAL
+        sv.v_z -= old_z * TIME_INTERVAL
+
+        sv.last_ax.append(a_x)
+        sv.last_ay.append(a_y)
+        sv.last_az.append(a_z)
+
+    if abs(a_x) < ACCEL_THRESHOLD and abs(a_y) < ACCEL_THRESHOLD:
+        v_x, v_y, v_z = 0, 0, 0
+
+    # velocity in g/s
+    v_x += a_x * TIME_INTERVAL
+    v_y += a_y * TIME_INTERVAL
+    v_z += a_z * TIME_INTERVAL
+    if sv.n % 10 == 0:
+        mouse.move(PIXEL_MOUSE_MOVE * v_x, PIXEL_MOUSE_MOVE * v_y)
+    sv.n += 1
 
 def sensor_thread(func, sv):
     while not sv.bProgramExit:
         func(sv)
-        time.sleep(0.01)  # Small delay to reduce CPU usage
+        time.sleep(TIME_INTERVAL)  # Small delay to reduce CPU usage
 
 if __name__ == "__main__":
     sv = SharedVariable()
