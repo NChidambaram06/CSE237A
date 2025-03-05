@@ -29,6 +29,11 @@ capture.release()
 
 import cv2
 import mediapipe
+import pyautogui
+
+width, height = pyautogui.size()
+print(f"Screen width: {width} pixels")
+print(f"Screen height: {height} pixels")
  
 drawingModule = mediapipe.solutions.drawing_utils
 handsModule = mediapipe.solutions.hands
@@ -38,32 +43,43 @@ capture = cv2.VideoCapture(0)
 frameWidth = capture.get(cv2.CAP_PROP_FRAME_WIDTH)
 frameHeight = capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
  
- 
-with handsModule.Hands(static_image_mode=False, min_detection_confidence=0.7, min_tracking_confidence=0.7, max_num_hands=2) as hands:
- 
-    while (True):
- 
-        ret, frame = capture.read()
- 
-        results = hands.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
- 
-        if results.multi_hand_landmarks != None:
-            for handLandmarks in results.multi_hand_landmarks:
-                for point in handsModule.HandLandmark:
-                    if point==0:
-                        wristLandmark = handLandmarks.landmark[handsModule.HandLandmark.WRIST]
-                        print(f"Wrist (Landmark 0) - X: {wristLandmark.x}, Y: {wristLandmark.y}, Z: {wristLandmark.z}")
- 
-                    normalizedLandmark = handLandmarks.landmark[point]
-                    pixelCoordinatesLandmark = drawingModule._normalized_to_pixel_coordinates(normalizedLandmark.x, normalizedLandmark.y, frameWidth, frameHeight)
- 
-                    cv2.circle(frame, pixelCoordinatesLandmark, 5, (0, 255, 0), -1)
- 
- 
-        cv2.imshow('Test hand', frame)
- 
-        if cv2.waitKey(1) == 27:
-            break
+
+# while True:
+#     getXY()
+hands = None
+try:
+    hands = handsModule.Hands(static_image_mode=False, min_detection_confidence=0.7, min_tracking_confidence=0.7, max_num_hands=2)
+except Exception as e:
+    print(f"Failed to starts handsModule. Error: {e}")
+
+def getXY():    
+    ret, frame = capture.read()
+
+    results = hands.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+    if results.multi_hand_landmarks != None:
+        for handLandmarks in results.multi_hand_landmarks:
+            for point in handsModule.HandLandmark:
+                if point==0:
+                    wristLandmark = handLandmarks.landmark[handsModule.HandLandmark.WRIST]
+                    print(f"Wrist (Landmark 0) - X: {wristLandmark.x}, Y: {wristLandmark.y}, Z: {wristLandmark.z}")
+                    xPixelLoc = min(width * (1 - wristLandmark.x), width) # 1- wristLandmark.x to fix the mirroring
+                    yPixelLoc = min(height * wristLandmark.y, height)
+                    print(f"Pixel Location: x: {xPixelLoc}, y: {yPixelLoc}")
+
+                normalizedLandmark = handLandmarks.landmark[point]
+                pixelCoordinatesLandmark = drawingModule._normalized_to_pixel_coordinates(normalizedLandmark.x, normalizedLandmark.y, frameWidth, frameHeight)
+
+                cv2.circle(frame, pixelCoordinatesLandmark, 5, (0, 255, 0), -1)
+
+
+    cv2.imshow('Test hand', frame)
+
+    if cv2.waitKey(1) == 27:
+        return
+
+while True:
+    getXY()
  
 cv2.destroyAllWindows()
 capture.release()
