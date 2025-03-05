@@ -15,8 +15,8 @@ PIN_RIGHT = 27
 PIN_SCROLL = 22
 PIN_PICK = 23
 #DIP two-color LED (Dual In-line Package)
-PIN_DIP_RED = LED(2)
-PIN_DIP_GRN = LED(3)
+PIN_DIP_RED = LED(20)
+PIN_DIP_GRN = LED(21)
 #SMD RGB LED (Surface Mount Device)
 PIN_SMD_RED = LED(26)
 PIN_SMD_GRN = LED(19)
@@ -30,7 +30,7 @@ PWR_MGMT_1 = 0x6B
 ACCEL_XOUT_H = 0x3B
 GYRO_XOUT_H = 0x43
 
-ACCEL_THRESHOLD = 0.095  # Tune this value based on your sensor noise
+ACCEL_THRESHOLD = 0.1  # Tune this value based on your sensor noise
 ACC_ERROR_X = 0.03#0.00328#-5.493426
 ACC_ERROR_Y= -0.03#0.030048#-3.049761
 GYRO_ERROR_X = -2.930811
@@ -39,7 +39,7 @@ GYRO_ERROR_Z = 0.787824
 # AccErrorX: 0.000728
 # run body_functions every 0.01 seconds (10 milliseconds)
 TIME_INTERVAL = 0.01
-PIXEL_MOUSE_MOVE = 100
+PIXEL_MOUSE_MOVE = 300
 
 mouse = Controller()
 bus = smbus2.SMBus(1)
@@ -57,7 +57,7 @@ class SharedVariable:
         self.scrollLastClick = self.get_millis()
         self.pickLastClick = self.get_millis()
         self.scroll_speed = 1
-        self.scroll_dir = 1
+        self.scroll_dir = -1
         self.last_ax = deque([])
         self.last_ay = deque([])
         self.last_az = deque([])
@@ -193,47 +193,50 @@ def map_value(value, in_min, in_max, out_min, out_max):
 def body_tilt(sv):
     AcX, AcY, AcZ = read_sensor_data()
     x, y, z = calculate_angles(AcX, AcY, AcZ)
-    if z > 35:
+    if z > 35 and z < 90:
         print(f"tilted down, z: {z}")
         sv.scroll_dir = -1
-    elif z < 15:
+    elif z < 15 or z >= 90:
         print(f"tilted up, z: {z}")
         sv.scroll_dir = 1
 
+'''
 def body_speed(sv):
     a_x, a_y, a_z, g_x, g_y, g_z, elapsed_time = get_accel_gyro()
     a_x = apply_deadband(a_x)
     a_y = apply_deadband(a_y)
     a_z = apply_deadband(a_z)
 
-    max_time_counts = 100
-    if len(last_ax) < max_time_counts:
+    max_time_counts = 50
+    if len(sv.last_ax) < max_time_counts:
         sv.last_ax.append(a_x)
         sv.last_ay.append(a_y)
         sv.last_az.append(a_z)
-    elif len(last_ax) == max_time_counts:
-        old_x = last_ax.popleft()
-        old_y = last_ay.popleft()
-        old_z = last_az.popleft()
-        sv.v_x -= old_x * TIME_INTERVAL
-        sv.v_y -= old_y * TIME_INTERVAL
-        sv.v_z -= old_z * TIME_INTERVAL
+    elif len(sv.last_ax) == max_time_counts:
+        old_x = sv.last_ax.popleft()
+        old_y = sv.last_ay.popleft()
+        old_z = sv.last_az.popleft()
+        sv.vx -= old_x * TIME_INTERVAL
+        sv.vy -= old_y * TIME_INTERVAL
+        sv.vz -= old_z * TIME_INTERVAL
 
         sv.last_ax.append(a_x)
         sv.last_ay.append(a_y)
         sv.last_az.append(a_z)
 
     if abs(a_x) < ACCEL_THRESHOLD and abs(a_y) < ACCEL_THRESHOLD:
-        v_x, v_y, v_z = 0, 0, 0
+        sv.v_x, sv.v_y, sv.v_z = 0, 0, 0
+    
 
     # velocity in g/s
-    v_x += a_x * TIME_INTERVAL
-    v_y += a_y * TIME_INTERVAL
-    v_z += a_z * TIME_INTERVAL
+    sv.vx += a_x * TIME_INTERVAL
+    sv.vy += a_y * TIME_INTERVAL
+    sv.vz += a_z * TIME_INTERVAL
     if sv.n % 10 == 0:
-        mouse.move(PIXEL_MOUSE_MOVE * v_x, PIXEL_MOUSE_MOVE * v_y)
+        print(f"moving mouse:x{PIXEL_MOUSE_MOVE * sv.vx}, y {PIXEL_MOUSE_MOVE * (-1) * sv.vy}")
+        mouse.move(PIXEL_MOUSE_MOVE * sv.vx, PIXEL_MOUSE_MOVE * sv.vy)
     sv.n += 1
-
+'''
 def sensor_thread(func, sv):
     while not sv.bProgramExit:
         func(sv)
@@ -241,7 +244,7 @@ def sensor_thread(func, sv):
 
 if __name__ == "__main__":
     sv = SharedVariable()
-    
+
     threads = [
         threading.Thread(target=sensor_thread, args=(body_right, sv)),
         threading.Thread(target=sensor_thread, args=(body_left, sv)),
@@ -250,7 +253,8 @@ if __name__ == "__main__":
         threading.Thread(target=sensor_thread, args=(body_rgbcolor, sv)),
         threading.Thread(target=sensor_thread, args=(body_twocolor, sv)),
         threading.Thread(target=sensor_thread, args=(body_ultra, sv)),
-        threading.Thread(target=sensor_thread, args=(body_tilt, sv))
+        threading.Thread(target=sensor_thread, args=(body_tilt, sv)),
+        #threading.Thread(target=sensor_thread, args=(body_speed, sv))
     ]
     
     for t in threads:
