@@ -1,3 +1,4 @@
+import os
 import gpiod
 from gpiozero import LED, DistanceSensor
 import time
@@ -237,15 +238,30 @@ def body_speed(sv):
         mouse.move(PIXEL_MOUSE_MOVE * sv.vx, PIXEL_MOUSE_MOVE * sv.vy)
     sv.n += 1
 '''
-def sensor_thread(func, sv):
-    while not sv.bProgramExit:
-        func(sv)
-        time.sleep(TIME_INTERVAL)  # Small delay to reduce CPU usage
+def body_mouse(sv):
+    print("Move mouse (IS STUB RIGHT NOW)")
+
+# def sensor_thread(func, sv):
+#     while not sv.bProgramExit:
+#         func(sv)
+#         time.sleep(TIME_INTERVAL)  # Small delay to reduce CPU usage
+
+def sensor_thread(func, sv, core_id):
+    """Runs the given function as a thread and pins it to a specific core."""
+    def target():
+        os.sched_setaffinity(0, {core_id})  # Set thread affinity to core_id
+        while not sv.bProgramExit:
+            func(sv)
+            time.sleep(TIME_INTERVAL)
+
+    t = threading.Thread(target=target)
+    t.start()
+    return t
 
 if __name__ == "__main__":
     sv = SharedVariable()
 
-    threads = [
+    '''threads = [
         threading.Thread(target=sensor_thread, args=(body_right, sv)),
         threading.Thread(target=sensor_thread, args=(body_left, sv)),
         threading.Thread(target=sensor_thread, args=(body_scroll, sv)),
@@ -255,10 +271,22 @@ if __name__ == "__main__":
         threading.Thread(target=sensor_thread, args=(body_ultra, sv)),
         threading.Thread(target=sensor_thread, args=(body_tilt, sv)),
         #threading.Thread(target=sensor_thread, args=(body_speed, sv))
+    ]'''
+    core_0_threads = [
+        sensor_thread(body_right, sv, 0),
+        sensor_thread(body_left, sv, 0),
+        sensor_thread(body_scroll, sv, 0),
+        sensor_thread(body_pick, sv, 0),
+        sensor_thread(body_rgbcolor, sv, 0),
+        sensor_thread(body_twocolor, sv, 0),
+        sensor_thread(body_ultra, sv, 0),
+        sensor_thread(body_tilt, sv, 0),
     ]
+
+    body_mouse_thread = sensor_thread(body_mouse, sv, 1)
     
-    for t in threads:
-        t.start()
+    # for t in threads:
+    #     t.start()
     
     try:
         while not sv.bProgramExit:
@@ -266,7 +294,8 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         sv.bProgramExit = 1
         
-    for t in threads:
+    # Join threads
+    for t in core_0_threads + [body_mouse_thread]:
         t.join()
     
     print("Program finished.")
