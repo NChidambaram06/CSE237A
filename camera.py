@@ -30,6 +30,7 @@ capture.release()
 import cv2
 import mediapipe
 import pyautogui
+from pynput.mouse import Button, Controller
 
 width, height = pyautogui.size()
 print(f"Screen width: {width} pixels")
@@ -42,8 +43,12 @@ capture = cv2.VideoCapture(0)
  
 frameWidth = capture.get(cv2.CAP_PROP_FRAME_WIDTH)
 frameHeight = capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
- 
 
+mouse = Controller()
+
+def stretch_range(x): # stretch range form approx 0.2 to 0.8 to 0 to 1 because struggles to detect hand near edge of camera
+    x = (x - 0.1)/ (0.9-0.1) 
+    return x
 # while True:
 #     getXY()
 hands = None
@@ -63,9 +68,11 @@ def getXY():
                 if point==0:
                     wristLandmark = handLandmarks.landmark[handsModule.HandLandmark.WRIST]
                     print(f"Wrist (Landmark 0) - X: {wristLandmark.x}, Y: {wristLandmark.y}, Z: {wristLandmark.z}")
-                    xPixelLoc = min(width * (1 - wristLandmark.x), width) # 1- wristLandmark.x to fix the mirroring
-                    yPixelLoc = min(height * wristLandmark.y, height)
+                    
+                    xPixelLoc = min(stretch_range(width) * (1 - wristLandmark.x), width) # 1- wristLandmark.x to fix the mirroring
+                    yPixelLoc = min(stretch_range(height) * wristLandmark.y, height)
                     print(f"Pixel Location: x: {xPixelLoc}, y: {yPixelLoc}")
+                    mouse.position = (xPixelLoc, yPixelLoc)
 
                 normalizedLandmark = handLandmarks.landmark[point]
                 pixelCoordinatesLandmark = drawingModule._normalized_to_pixel_coordinates(normalizedLandmark.x, normalizedLandmark.y, frameWidth, frameHeight)
