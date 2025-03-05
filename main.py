@@ -7,7 +7,8 @@ from pynput.mouse import Button, Controller
 import smbus2
 import math
 from collections import deque
-from testAccelerometer import * 
+# from testAccelerometer import * 
+from camera_rasp_pi import *
 
 # GPIO chip and lines
 CHIP_NAME = "/dev/gpiochip0"
@@ -240,6 +241,8 @@ def body_speed(sv):
 '''
 def body_mouse(sv):
     print("Move mouse (IS STUB RIGHT NOW)")
+    xPixelLoc, yPixelLoc = getXY()
+    mouse.position = (xPixelLoc, yPixelLoc)
 
 # def sensor_thread(func, sv):
 #     while not sv.bProgramExit:
@@ -297,5 +300,8 @@ if __name__ == "__main__":
     # Join threads
     for t in core_0_threads + [body_mouse_thread]:
         t.join()
+    
+    cv2.destroyAllWindows()
+    camera.stop()
     
     print("Program finished.")

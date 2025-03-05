@@ -67,9 +67,9 @@ def getXY():
     return xPixelLoc, yPixelLoc
 
 # Run hand tracking loop
-while True:
-    getXY()
+# while True:
+#     getXY()
 
 # Cleanup
-cv2.destroyAllWindows()
-camera.stop()
+# cv2.destroyAllWindows()
+# camera.stop()
