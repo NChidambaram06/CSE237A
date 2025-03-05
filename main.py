@@ -13,8 +13,8 @@ PIN_RIGHT = 27
 PIN_SCROLL = 22
 PIN_PICK = 23
 #DIP two-color LED (Dual In-line Package)
-PIN_DIP_RED = LED(2)
-PIN_DIP_GRN = LED(3)
+PIN_DIP_RED = LED(20)
+PIN_DIP_GRN = LED(21)
 #SMD RGB LED (Surface Mount Device)
 PIN_SMD_RED = LED(26)
 PIN_SMD_GRN = LED(19)
@@ -35,7 +35,7 @@ class SharedVariable:
         self.scrollLastClick = self.get_millis()
         self.pickLastClick = self.get_millis()
         self.scroll_speed = 1
-        self.scroll_dir = 1
+        self.scroll_dir = -1
     
     def get_millis(self):
         return int(time.time() * 1000)
