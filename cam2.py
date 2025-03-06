@@ -4,7 +4,7 @@ import numpy as np
 import pyautogui
 from picamera2 import Picamera2
 
-# Initialize screen size
+# Get screen size
 width, height = pyautogui.size()
 print(f"Screen width: {width} pixels")
 print(f"Screen height: {height} pixels")
@@ -22,13 +22,13 @@ hands = handsModule.Hands(static_image_mode=False,
                         min_detection_confidence=0.7, 
                         min_tracking_confidence=0.7, 
                         max_num_hands=2)
-def norm(x):
-    return (x - 0.2)/(0.8-0.2)
-def normX(x):
+def norm(y): # normalize the y values to between 0 and 1
+    return (y - 0.2)/(0.8-0.2)
+def normX(x): # normalize the x values to between 0 and 1
     return (x-0.4)/(0.6-0.4)
 def getXY():
     # Capture frame from PiCamera2
-    frame = camera.capture_array()  # Capture image as a NumPy array
+    frame = camera.capture_array()  # Capture image as NumPy array
     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)  # Convert to BGR for OpenCV
 
     # Get frame dimensions
@@ -47,7 +47,7 @@ def getXY():
                     print(f"Wrist (Landmark 0) - X: {wrist.x}, Y: {wrist.y}, Z: {wrist.z}")
 
                     # Convert to pixel coordinates
-                    xPixelLoc = min(width * normX(1 - wrist.x), width)  # Fix mirroring
+                    xPixelLoc = min(width * normX(1 - wrist.x), width)  # 1 0 wrist.x to fix the mirroring
                     yPixelLoc = min(height * norm(wrist.y), height)
                     print(f"Pixel Location: x: {xPixelLoc}, y: {yPixelLoc}")
 
@@ -66,12 +66,3 @@ def getXY():
         return
     return xPixelLoc, yPixelLoc
 
-'''
-# Run hand tracking loop
-while True:
-    getXY()
-
-# Cleanup
-cv2.destroyAllWindows()
-camera.stop()
-'''
