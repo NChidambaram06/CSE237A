@@ -2,21 +2,19 @@ import cv2
 import mediapipe
 import numpy as np
 import pyautogui
-from picamzero import PiCamera
+from picamera2 import Picamera2
 
 # Initialize screen size
 width, height = pyautogui.size()
 print(f"Screen width: {width} pixels")
 print(f"Screen height: {height} pixels")
 
-# Initialize PiCamera
-camera = PiCamera()
-camera.resolution = (640, 480)
+# Initialize PiCamera2
+camera = Picamera2()
+camera.configure(camera.create_still_configuration())
 camera.start()
 
 # Initialize MediaPipe Hand Tracking
-# mp_drawing = mp.solutions.drawing_utils
-# mp_hands = mp.solutions.hands
 drawingModule = mediapipe.solutions.drawing_utils
 handsModule = mediapipe.solutions.hands
 
@@ -26,8 +24,8 @@ hands = handsModule.Hands(static_image_mode=False,
                         max_num_hands=2)
 
 def getXY():
-    # Capture frame from PiCamera
-    frame = camera.array  # Get the image as a NumPy array
+    # Capture frame from PiCamera2
+    frame = camera.capture_array()  # Capture image as a NumPy array
     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)  # Convert to BGR for OpenCV
 
     # Get frame dimensions
@@ -51,12 +49,10 @@ def getXY():
                     print(f"Pixel Location: x: {xPixelLoc}, y: {yPixelLoc}")
 
                 # Draw landmarks on frame
-                # drawingModule.draw_landmarks(frame, hand_landmarks, handsModule.HAND_CONNECTIONS)
                 normalizedLandmark = handLandmarks.landmark[point]
                 pixelCoordinatesLandmark = drawingModule._normalized_to_pixel_coordinates(normalizedLandmark.x, normalizedLandmark.y, frameWidth, frameHeight)
 
                 cv2.circle(frame, pixelCoordinatesLandmark, 5, (0, 255, 0), -1)
-
 
     # Display the frame
     cv2.imshow('Hand Tracking', frame)
