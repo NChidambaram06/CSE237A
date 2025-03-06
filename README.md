@@ -1,49 +1,49 @@
-**Gesture Based Mouse**
-
-# Gesture-Based Mouse Control Using Raspberry Pi
+# Motion Controlled Gestural Mouse
 
 ## Overview
-This project implements a **gesture-based mouse control system** using a **Raspberry Pi**. The system allows users to control a computer's mouse cursor and perform actions like clicking, scrolling, and picking up/dropping the mouse using hand gestures and physical buttons. The project leverages **MediaPipe** for hand tracking, **OpenCV** for image processing, and **GPIO** for interfacing with physical buttons and LEDs.
+This project implements a gesture-based mouse control system using a Raspberry Pi 5 as the base. The system allows users to control a computer's mouse cursor and perform actions like clicking, scrolling, and picking up/dropping the mouse using hand gestures and touch sensors. The project uses MediaPipe for hand tracking, OpenCV for image processing, and GPIO for interfacing with sensors and LEDs.
 
 ---
 
 ## Features
 1. **Hand Tracking**:
    - Tracks the user's hand using a camera and maps the hand's position to the mouse cursor on the screen.
-   - Uses **MediaPipe** for hand landmark detection.
+   - Uses MediaPipe for hand landmark detection.
 
 2. **Mouse Actions**:
-   - **Left Click**: Triggered by a physical button.
-   - **Right Click**: Triggered by another physical button.
-   - **Scroll**: Controlled by tilting the device or using an ultrasonic sensor to detect hand distance.
-   - **Pick/Drop Mouse**: Toggles the mouse control on/off using a physical button.
+   - **Left Click**: Triggered by touch sensor.
+   - **Right Click**: Triggered by second touch sensor.
+   - **Scroll**: Controlled by tilting the device or using an ultrasonic sensor as a speed gauge, triggered by a third touch sensor.
+   - **Pick/Drop Mouse**: Toggles the mouse control on/off using a fourth touch sensor.
 
-3. **Visual Feedback**:
-   - **DIP Two-Color LED**: Indicates whether the mouse is active (green) or inactive (red).
-   - **SMD RGB LED**: Lights up when the mouse is active and a left click is performed.
+3. **Visual Feedback** - alerts for successful functionality:
+   - **DIP Two-Color LED**: Indicates whether the mouse is picked up (green) or dropped (red).
+   - **SMD RGB LED**: Lights up when the mouse is picked up and a left click is performed.
 
 4. **Ultrasonic Sensor**:
-   - Measures the distance of the hand from the sensor to control the scroll speed.
+   - Measures the distance of the speed gauge from the sensor to control the scroll speed.
 
 5. **Accelerometer/Gyroscope**:
-   - Detects device tilt to control the scroll direction (up or down).
+   - Detects hand tilt to control the scroll direction (up or down).
 
 6. **Multi-Core Processing**:
-   - The program uses **threading** and **CPU core affinity** to optimize performance by pinning specific tasks to different CPU cores.
+   - The program uses threading and 2 CPUs to optimize performance by assigning the processor-heavy hand tracking program to a single core and all of the other threads to a second core..
 
 ---
 
-## Hardware Requirements
-- **Raspberry Pi** (with GPIO pins)
-- **Camera Module** (e.g., PiCamera)
+## Hardware
+- **Raspberry Pi 5** (with GPIO pins, 2 cores available)
+- **Camera Module** (Raspberry Pi Camera Module V2)
+   - CSI FPC Flexible Cable for Raspberry Pi 5,  22Pin to 15Pin
 - **Ultrasonic Sensor** (HC-SR04)
 - **Accelerometer/Gyroscope** (MPU6050)
-- **Push Buttons** (for left click, right click, scroll, and pick/drop)
+- **Touch Sensors** (TTP223B Digital Capacitivev Touch Sensor Switch Module) x 4
 - **LEDs**:
-  - DIP Two-Color LED (red and green)
-  - SMD RGB LED (red, green, blue)
+  - 2-Color DIP LED (KY-011)
+  - 3-Color SMD RGB LED (KY-009)
 - **Resistors** (for LEDs)
 - **Jumper Wires** and **Breadboard**
+- **Glove** (Palm and Fingers exposed (only fingertips on non-thumb fingers covered))
 
 ---
 
@@ -126,48 +126,3 @@ pip install mediapipe opencv-python pyautogui gpiod gpiozero smbus2 pynput picam
    - The **DIP LED** will turn green when the mouse is active and red when inactive.
    - The **SMD RGB LED** will light up when the mouse is active and a left click is performed.
 
----
-
-## Troubleshooting
-1. **Camera Not Working**:
-   - Ensure the camera module is properly connected and enabled in the Raspberry Pi settings.
-   - Run `raspi-config` to enable the camera interface.
-2. **GPIO Errors**:
-   - Check the wiring of the buttons, LEDs, and sensors.
-   - Ensure the correct GPIO pins are used in the code.
-3. **Hand Tracking Issues**:
-   - Ensure proper lighting and a clear view of the hand.
-   - Adjust the `min_detection_confidence` and `min_tracking_confidence` parameters in `cam2.py` if needed.
-
----
-
-## Future Improvements
-1. **Gesture Recognition**:
-   - Add support for more gestures (e.g., pinch to zoom, swipe).
-2. **Wireless Control**:
-   - Implement wireless communication (e.g., Bluetooth or Wi-Fi) to control the mouse remotely.
-3. **Energy Efficiency**:
-   - Optimize the code to reduce CPU usage and improve battery life (if using a portable setup).
-
----
-
-## License
-This project is open-source and available under the **MIT License**. Feel free to modify and distribute it as needed.
-
----
-
-## Acknowledgments
-- **MediaPipe**: For providing an excellent hand tracking solution.
-- **Raspberry Pi Foundation**: For creating an accessible and powerful platform for DIY projects.
-- **OpenCV**: For enabling real-time image processing.
-
----
-
-## Contact
-For questions or feedback, please contact:
-- **Your Name**: [Your Email]
-- **GitHub**: [Your GitHub Profile]
-
----
-
-Enjoy building and using your gesture-based mouse control system! 🎉
