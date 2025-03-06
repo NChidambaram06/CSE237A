@@ -74,8 +74,8 @@ class SharedVariable:
 
 def read_gpio_value(line):
     with gpiod.Chip(CHIP_NAME) as chip:
-        gpio_line = chip.get_line(line)
-        gpio_line.request(consumer="sensor", type=gpiod.LINE_REQ_DIR_IN)
+        # gpio_line = chip.get_line(line)
+        chip.request(consumer="sensor", type=gpiod.LINE_REQ_DIR_IN)
         return gpio_line.get_value()
         
 def write_gpio_value(line, val):
